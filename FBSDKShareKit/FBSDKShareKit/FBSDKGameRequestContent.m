@@ -22,11 +22,7 @@
 
  #import "FBSDKGameRequestContent.h"
 
- #ifdef FBSDKCOCOAPODS
-  #import <FBSDKCoreKit/FBSDKCoreKit+Internal.h>
- #else
-  #import "FBSDKCoreKit+Internal.h"
- #endif
+ #import "FBSDKHasher.h"
  #import "FBSDKShareConstants.h"
  #import "FBSDKShareUtility.h"
 
@@ -153,13 +149,15 @@
                                                 isIn:@[@(FBSDKGameRequestActionTypeNone),
                                                        @(FBSDKGameRequestActionTypeSend),
                                                        @(FBSDKGameRequestActionTypeAskFor),
-                                                       @(FBSDKGameRequestActionTypeTurn)]
+                                                       @(FBSDKGameRequestActionTypeTurn),
+                                                       @(FBSDKGameRequestActionTypeInvite)]
                                                error:errorRef]
   && [FBSDKShareUtility validateArgumentWithName:@"filters"
                                            value:_filters
                                             isIn:@[@(FBSDKGameRequestFilterNone),
                                                    @(FBSDKGameRequestFilterAppUsers),
-                                                   @(FBSDKGameRequestFilterAppNonUsers)]
+                                                   @(FBSDKGameRequestFilterAppNonUsers),
+                                                   @(FBSDKGameRequestFilterEverybody)]
                                            error:errorRef];
 }
 
@@ -168,16 +166,16 @@
 - (NSUInteger)hash
 {
   NSUInteger subhashes[] = {
-    [FBSDKMath hashWithInteger:_actionType],
+    [FBSDKHasher hashWithInteger:_actionType],
     _data.hash,
-    [FBSDKMath hashWithInteger:_filters],
+    [FBSDKHasher hashWithInteger:_filters],
     _message.hash,
     _objectID.hash,
     _recipientSuggestions.hash,
     _title.hash,
     _recipients.hash,
   };
-  return [FBSDKMath hashWithIntegerArray:subhashes count:sizeof(subhashes) / sizeof(subhashes[0])];
+  return [FBSDKHasher hashWithIntegerArray:subhashes count:sizeof(subhashes) / sizeof(subhashes[0])];
 }
 
 - (BOOL)isEqual:(id)object
@@ -196,12 +194,12 @@
   return (content
     && _actionType == content.actionType
     && _filters == content.filters
-    && [FBSDKInternalUtility object:_data isEqualToObject:content.data]
-    && [FBSDKInternalUtility object:_message isEqualToObject:content.message]
-    && [FBSDKInternalUtility object:_objectID isEqualToObject:content.objectID]
-    && [FBSDKInternalUtility object:_recipientSuggestions isEqualToObject:content.recipientSuggestions]
-    && [FBSDKInternalUtility object:_title isEqualToObject:content.title]
-    && [FBSDKInternalUtility object:_recipients isEqualToObject:content.recipients]);
+    && [FBSDKInternalUtility.sharedUtility object:_data isEqualToObject:content.data]
+    && [FBSDKInternalUtility.sharedUtility object:_message isEqualToObject:content.message]
+    && [FBSDKInternalUtility.sharedUtility object:_objectID isEqualToObject:content.objectID]
+    && [FBSDKInternalUtility.sharedUtility object:_recipientSuggestions isEqualToObject:content.recipientSuggestions]
+    && [FBSDKInternalUtility.sharedUtility object:_title isEqualToObject:content.title]
+    && [FBSDKInternalUtility.sharedUtility object:_recipients isEqualToObject:content.recipients]);
 }
 
  #pragma mark - NSCoding
@@ -242,7 +240,7 @@
 
 - (id)copyWithZone:(NSZone *)zone
 {
-  FBSDKGameRequestContent *copy = [[FBSDKGameRequestContent alloc] init];
+  FBSDKGameRequestContent *copy = [FBSDKGameRequestContent new];
   copy->_actionType = _actionType;
   copy->_data = [_data copy];
   copy->_filters = _filters;

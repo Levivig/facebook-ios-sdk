@@ -18,14 +18,24 @@
 
 #import <UIKit/UIKit.h>
 
+#import "FBSDKImpressionTrackingButton.h"
+@class FBSDKIcon;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /**
   A base class for common SDK buttons.
  */
 NS_SWIFT_NAME(FBButton)
-@interface FBSDKButton : UIButton
+@interface FBSDKButton : FBSDKImpressionTrackingButton
 
+@property (nonatomic, readonly, getter = isImplicitlyDisabled) BOOL implicitlyDisabled;
+
+- (void)checkImplicitlyDisabled;
+- (void)configureWithIcon:(nullable FBSDKIcon *)icon
+                    title:(nullable NSString *)title
+          backgroundColor:(nullable UIColor *)backgroundColor
+         highlightedColor:(nullable UIColor *)highlightedColor;
 @end
 
 NS_ASSUME_NONNULL_END

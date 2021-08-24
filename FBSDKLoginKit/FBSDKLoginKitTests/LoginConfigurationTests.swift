@@ -16,6 +16,10 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#if BUCK
+import FacebookCore
+#endif
+
 import XCTest
 
 class LoginConfigurationTests: XCTestCase {
@@ -38,6 +42,15 @@ class LoginConfigurationTests: XCTestCase {
     XCTAssertNotNil(
       config.nonce,
       "A config should be created with a default nonce"
+    )
+    XCTAssertNil(
+      config.messengerPageId,
+      "Messenger Page Id should default to nil when unspecified"
+    )
+    XCTAssertEqual(
+      config.authType,
+      .rerequest,
+      "Auth Type should default to rerequest when unspecified"
     )
   }
 
@@ -78,32 +91,60 @@ class LoginConfigurationTests: XCTestCase {
     let config = LoginConfiguration(permissions: permissions)
 
     XCTAssertEqual(
-      Set((config?.requestedPermissions.map { $0.value })!),
+      Set((config?.requestedPermissions.map { $0.value })!), // swiftlint:disable:this force_unwrapping
       Set(permissions.map { $0.name }),
       "Should create a configuration with the provided tracking preference"
     )
   }
 
-  func testCreatingWithPermissionsForLimitedTracking() {
-    let allowedPermissions = Set([Permission.email])
-    let disallowedPermissions = Set([Permission.userBirthday, .userPosts])
+  func testCreatingWithMessengerPageId() {
+    let messengerPageId = "12345"
+    let config = LoginConfiguration(messengerPageId: messengerPageId)
+    XCTAssertEqual(
+      config?.messengerPageId,
+      messengerPageId,
+      "Should create a configuration with the provided Messenger Page Id"
+    )
+  }
 
-    var configuration = LoginConfiguration(
-      permissions: disallowedPermissions,
-      tracking: .limited
+  func testCreatingWithRerequestAuthType() {
+    let authType = LoginAuthType.rerequest
+    let config = LoginConfiguration(authType: authType)
+    XCTAssertEqual(
+      config?.authType,
+      authType,
+      "Should create a configuration with the provided auth_type"
     )
-    XCTAssertNil(
-      configuration,
-      "Should not create a configuration with permissions that are disallowed based on the tracking preference" // swiftlint:disable:this line_length
-    )
+  }
 
-    configuration = LoginConfiguration(
-      permissions: allowedPermissions,
-      tracking: .limited
+  func testCreatingWithReauthorizeAuthType() {
+    let authType = LoginAuthType.reauthorize
+    let config = LoginConfiguration(authType: authType)
+    XCTAssertEqual(
+      config?.authType,
+      authType,
+      "Should create a configuration with the provided auth_type"
     )
-    XCTAssertNotNil(
-      configuration,
-      "Should create a configuration with permissions that are allowed based on the tracking preference" // swiftlint:disable:this line_length
+  }
+
+  func testCreatingWithNilAuthType() {
+    let config = LoginConfiguration(authType: nil)
+    XCTAssertEqual(
+      config?.authType,
+      nil,
+      "Should treat a nil auth type as nil"
+    )
+  }
+
+  func testAuthTypeForStringWithInvalidAuthType() {
+    XCTAssertNil(LoginConfiguration.authType(for: "foo"), "Should return nil for invalid auth types")
+  }
+
+  func testAuthTypeForStringWithValidAuthType() {
+    XCTAssertEqual(
+      LoginConfiguration.authType(for: "rerequest"),
+      .rerequest,
+      "Should return corresponding auth type when valid raw auth type is given"
     )
   }
 }

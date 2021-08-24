@@ -17,16 +17,21 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 @objcMembers
-public class ApplicationDelegateObserverFake: NSObject, FBSDKApplicationObserving {
-  public private(set) var didFinishLaunchingCallCount = 0
-  public private(set) var capturedLaunchOptions: [UIApplication.LaunchOptionsKey: Any]?
+class TestApplicationDelegateObserver: NSObject, FBSDKApplicationObserving {
+  var didFinishLaunchingCallCount = 0
+  var capturedLaunchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  var wasWillResignActiveCalled = false
 
-  public func application(
+  func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     didFinishLaunchingCallCount += 1
     capturedLaunchOptions = launchOptions
     return true
+  }
+
+  func applicationWillResignActive(_ application: UIApplication?) {
+    wasWillResignActiveCalled = true
   }
 }

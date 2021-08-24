@@ -16,12 +16,12 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#import <OCMock/OCMock.h>
 #import <XCTest/XCTest.h>
 
 #import "FBSDKCoreKitTests-Swift.h"
 #import "FBSDKFeatureExtractor.h"
-#import "FBSDKInternalUtility.h"
+#import "FBSDKFeatureExtractor+Internal.h"
+#import "FBSDKInternalUtility+Internal.h"
 #import "FBSDKModelManager.h"
 #import "FBSDKViewHierarchyMacros.h"
 
@@ -48,21 +48,26 @@
 + (float)regextMatch:(NSString *)pattern
                 text:(NSString *)text;
 
++ (void)reset;
+
 @end
 
 @interface FBSDKFeatureExtractorTests : XCTestCase
-{
-  NSDictionary *_rules;
-  NSDictionary *_viewHierarchy;
-  NSDictionary *_interactedNode;
-  NSArray *_siblings;
-}
+
+@property (nonatomic) NSDictionary *rules;
+@property (nonatomic) NSDictionary *viewHierarchy;
+@property (nonatomic) NSDictionary *interactedNode;
+@property (nonatomic) NSArray *siblings;
+
+@property (nonatomic) TestOnDeviceMLModelManager *modelManager;
 @end
 
 @implementation FBSDKFeatureExtractorTests
 
 - (void)setUp
 {
+  [super setUp];
+  _modelManager = [TestOnDeviceMLModelManager new];
   // load rules for classifying view text
   NSBundle *bundle = [NSBundle bundleForClass:[self class]];
   NSString *filepath = [bundle pathForResource:@"FBSDKTextClassifyRules" ofType:@"json"];
@@ -70,8 +75,9 @@
     _rules = [FBSDKTypeUtility JSONObjectWithData:[[NSData alloc] initWithContentsOfFile:filepath] options:0 error:nil];;
   }
 
-  id _mockModelManager = OCMClassMock([FBSDKModelManager class]);
-  OCMStub([_mockModelManager getRulesForKey:[OCMArg any]]).andReturn(_rules);
+  [FBSDKFeatureExtractor configureWithRulesFromKeyProvider:_modelManager];
+  _modelManager.rulesForKey = _rules;
+
   [FBSDKFeatureExtractor loadRulesForKey:@"MTML"];
 
   _viewHierarchy = @{
@@ -241,6 +247,13 @@
       @"hint" : @"Confirm Order",
     },
   ];
+}
+
+- (void)tearDown
+{
+  [FBSDKFeatureExtractor reset];
+
+  [super tearDown];
 }
 
 - (void)testGetDenseFeature

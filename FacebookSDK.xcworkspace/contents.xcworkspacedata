@@ -2,6 +2,15 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:TestTools/TestTools.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:FBSDKCoreKit_Basics/FBSDKCoreKit_Basics.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:FBAEMKit/FBAEMKit.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:FBSDKCoreKit/FBSDKCoreKit.xcodeproj">
    </FileRef>
    <FileRef

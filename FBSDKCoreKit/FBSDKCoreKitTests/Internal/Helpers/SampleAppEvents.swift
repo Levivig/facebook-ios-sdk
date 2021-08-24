@@ -19,13 +19,13 @@
 import Foundation
 
 @objcMembers
-public class SampleAppEvents: NSObject {
+class SampleAppEvents: NSObject {
 
-  public static var validEvent: [String: String] {
-    return ["_eventName": "event1"]
+  static var validEvent: [String: String] {
+    ["_eventName": "event1"]
   }
 
-  public static func validEvent(withName name: String) -> [String: String] {
-    return ["_eventName": name]
+  static func validEvent(withName name: String) -> [String: String] {
+    ["_eventName": name]
   }
 }

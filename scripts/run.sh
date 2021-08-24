@@ -54,12 +54,18 @@ main() {
     SDK_SCRIPTS_DIR=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
     SDK_DIR="$(dirname "$SDK_SCRIPTS_DIR")"
 
+    CORE_KIT_BASICS="FBSDKCoreKit_Basics"
+    AEM_KIT="FBAEMKit"
     CORE_KIT="FBSDKCoreKit"
     LOGIN_KIT="FBSDKLoginKit"
     SHARE_KIT="FBSDKShareKit"
+    LEGACY_GAMING_SERVICES="LegacyGamingServices"
+    FACEBOOK_GAMING_SERVICES="FacebookGamingServices"
     GAMING_SERVICES_KIT="FBSDKGamingServicesKit"
 
     SDK_BASE_KITS=(
+      "$CORE_KIT_BASICS"
+      "$AEM_KIT"
       "$CORE_KIT"
       "$LOGIN_KIT"
       "$SHARE_KIT"
@@ -67,22 +73,28 @@ main() {
 
     SDK_KITS=(
       "${SDK_BASE_KITS[@]}"
+      "$LEGACY_GAMING_SERVICES"
+      "$FACEBOOK_GAMING_SERVICES"
       "$GAMING_SERVICES_KIT"
       "FBSDKTVOSKit"
     )
 
     SDK_VERSION_FILES=(
       "Configurations/Version.xcconfig"
-      "FBSDKCoreKit/FBSDKCoreKit/FBSDKCoreKit.h"
+      "FBAEMKit/Configurations/Shared/Version.xcconfig"
+      "FBSDKCoreKit/FBSDKCoreKit/FBSDKCoreKitVersions.h"
+      "Sources/FBAEMKit/FBAEMKitVersions.h"
       "Sources/FBSDKCoreKit_Basics/FBSDKCrashHandler.m"
     )
 
     SDK_GRAPH_API_VERSION_FILES=(
-      "FBSDKCoreKit/FBSDKCoreKit/FBSDKCoreKit.h"
-      "FBSDKCoreKit/FBSDKCoreKitTests/FBSDKGraphRequestTests.m"
+      "FBSDKCoreKit/FBSDKCoreKit/FBSDKCoreKitVersions.h"
+      "FBSDKCoreKit/FBSDKCoreKitTests/GraphRequestTests.swift"
+      "Sources/FBAEMKit/FBAEMKitVersions.h"
+      "Sources/FBAEMKit/FBAEMNetworker.m"
     )
 
-    SDK_MAIN_VERSION_FILE="FBSDKCoreKit/FBSDKCoreKit/FBSDKCoreKit.h"
+    SDK_MAIN_VERSION_FILE="FBSDKCoreKit/FBSDKCoreKit/FBSDKCoreKitVersions.h"
 
     SDK_FRAMEWORK_NAME="FacebookSDK"
 
@@ -90,19 +102,24 @@ main() {
     SDK_POD_SPECS=("${SDK_POD_SPECS[@]/%/.podspec}")
 
     SDK_LINT_POD_SPECS=(
+      "FBSDKCoreKit_Basics.podspec"
+      "FBAEMKit.podspec"
       "FBSDKCoreKit.podspec"
       "FBSDKLoginKit.podspec"
       "FBSDKShareKit.podspec"
+      "LegacyGamingServices.podspec"
+      "FacebookGamingServices.podspec"
       "FBSDKGamingServicesKit.podspec"
       "FBSDKTVOSKit.podspec"
     )
 
     SDK_CURRENT_VERSION=$(grep -Eo 'FBSDK_VERSION_STRING @".*"' "$SDK_DIR/$SDK_MAIN_VERSION_FILE" | awk -F'"' '{print $2}')
-    SDK_CURRENT_GRAPH_API_VERSION=$(grep -Eo 'FBSDK_TARGET_PLATFORM_VERSION @".*"' "$SDK_DIR/$SDK_MAIN_VERSION_FILE" | awk -F'"' '{print $2}')
+    SDK_CURRENT_GRAPH_API_VERSION=$(grep -Eo 'FBSDK_DEFAULT_GRAPH_API_VERSION @".*"' "$SDK_DIR/$SDK_MAIN_VERSION_FILE" | awk -F'"' '{print $2}')
 
     SDK_GIT_REMOTE="https://github.com/facebook/facebook-ios-sdk"
 
     SWIFT_PACKAGE_SCHEMES=(
+      "FacebookAEM"
       "FacebookCore"
       "FacebookLogin"
       "FacebookShare"
@@ -148,6 +165,19 @@ setup_sdk() {
   } >>"$SDK_DIR"/Configurations/TestAppIdAndSecret.xcconfig
 }
 
+grep_for_old_version() {
+  local old_version=${1:-}
+
+  RED='\033[1;31m'
+  RESET='\033[0m'
+
+  FILES_WITH_OLD_VERSION=$(grep -rF "$old_version" -- * | grep -Ev '(CHANGELOG.md|\bbuild/|Carthage/Build)')
+  if [ -n "$FILES_WITH_OLD_VERSION" ]; then
+    echo "${RED}ERROR: Grep found the old $old_version version in ${FILES_WITH_OLD_VERSION}${RESET}" 1>&2;
+    exit 1
+  fi
+}
+
 # Bump Version
 bump_version() {
   local new_version=${1:-}
@@ -191,6 +221,8 @@ bump_version() {
     mv "$temp_file" "$full_file_path"
   done
 
+  grep_for_old_version "$SDK_CURRENT_VERSION"
+
   bump_changelog "$new_version"
 }
 
@@ -225,6 +257,8 @@ bump_api_version() {
 
     mv "$temp_file" "$full_file_path"
   done
+
+  grep_for_old_version "$SDK_CURRENT_GRAPH_API_VERSION"
 }
 
 bump_changelog() {
@@ -363,16 +397,26 @@ lint_sdk() {
 
       set +e
 
-      if [ "$spec" != FBSDKCoreKit.podspec ]; then
-        dependent_spec="--include-podspecs=FBSDKCoreKit.podspec"
+      if [ "$spec" == FBSDKCoreKit.podspec ]; then
+        dependent_spec="--include-podspecs={FBAEMKit,FBSDKCoreKit_Basics}.podspec"
+      else
+        dependent_spec="--include-podspecs={FBAEMKit,FBSDKCoreKit,FBSDKCoreKit_Basics}.podspec"
       fi
 
       if [ "$spec" == FBSDKTVOSKit.podspec ]; then
-        dependent_spec="--include-podspecs=FBSDK{Core,Share,Login}Kit.podspec"
+        dependent_spec="--include-podspecs={FBAEMKit,FBSDKCoreKit,FBSDKShareKit,FBSDKLoginKit,FBSDKCoreKit_Basics}.podspec"
+      fi
+
+      if [ "$spec" == LegacyGamingServices.podspec ]; then
+        dependent_spec="--include-podspecs={FBAEMKit,FBSDKCoreKit_Basics,FBSDKCoreKit,FBSDKShareKit}.podspec"
+      fi
+
+      if [ "$spec" == FacebookGamingServices.podspec ]; then
+        dependent_spec="--include-podspecs={FBAEMKit,FBSDKCoreKit_Basics,FBSDKCoreKit,FBSDKShareKit,LegacyGamingServices}.podspec"
       fi
 
       if [ "$spec" == FBSDKGamingServicesKit.podspec ]; then
-        dependent_spec="--include-podspecs=FBSDK{Core,Share}Kit.podspec"
+        dependent_spec="--include-podspecs={FBAEMKit,FBSDKCoreKit_Basics,FBSDKCoreKit,FBSDKShareKit,LegacyGamingServices,FacebookGamingServices}.podspec"
       fi
 
       echo ""
@@ -405,20 +449,11 @@ lint_sdk() {
     fi
   }
 
-  lint_swift() {
-    if command -v swiftlint >/dev/null; then
-      swiftlint
-    else
-      echo "warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint"
-    fi
-  }
-
   local lint_type=${1:-}
   if [ -n "$lint_type" ]; then shift; fi
 
   case "$lint_type" in
   "cocoapods") lint_cocoapods --allow-warnings "$@";;
-  "swift") lint_swift "$@" ;;
   *) echo "Unsupported Lint: $lint_type" ;;
   esac
 }
@@ -435,32 +470,11 @@ release_sdk() {
     # Release frameworks in dynamic (mostly for Carthage)
     release_dynamic() {
       CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh build --no-skip-current
-      CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh archive --output build/Release/
-      mv build/Release/FBSDKCoreKit.framework.zip build/Release/FacebookSDK_Dynamic.framework.zip
+      CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh archive --output build/Release/FacebookSDK_Dynamic.framework.zip
     }
 
     # Release frameworks in static
     release_static() {
-      release_basics() {
-        xcodebuild clean build \
-         -workspace FacebookSDK.xcworkspace \
-         -scheme BuildCoreKitBasics \
-         -configuration Release | xcpretty
-
-        kit="FBSDKCoreKit_Basics"
-        cd build || exit
-
-        mkdir -p Release/"$kit"/iOS
-        mv FBSDKCoreKit.framework Release/"$kit"/iOS
-        mkdir -p Release/"$kit"/tvOS
-        mv tv/FBSDKCoreKit.framework Release/"$kit"/tvOS
-        cd Release || exit
-        zip -r -m "$kit".zip "$kit"
-        cd ..
-
-        cd ..
-      }
-
       xcodebuild clean build \
        -workspace FacebookSDK.xcworkspace \
        -scheme BuildAllKits \
@@ -472,7 +486,8 @@ release_sdk() {
        -configuration Release | xcpretty
 
       cd build || exit
-      zip -r FacebookSDK_static.zip ./*.framework ./*/*.framework
+      cp ../LICENSE ./ # LICENSE file
+      zip -r FacebookSDK_static.zip ./*.framework ./*/*.framework LICENSE
       mv FacebookSDK_Static.zip Release/
       for kit in "${SDK_KITS[@]}"; do
         if [ ! -d "$kit".framework ] \
@@ -494,8 +509,6 @@ release_sdk() {
         cd ..
       done
       cd ..
-
-      release_basics
     }
 
     local release_type=${1:-}
@@ -506,18 +519,6 @@ release_sdk() {
     "dynamic") release_dynamic "$@" ;;
     *) release_dynamic && release_static ;;
     esac
-  }
-
-  # Release Cocoapods
-  release_cocoapods() {
-    for spec in "$@"; do
-      if [ ! -f "$spec".podspec ]; then
-        echo "*** ERROR: unable to release $spec"
-        continue
-      fi
-
-      pod trunk push --allow-warnings "$spec".podspec || { echo "Failed to push $spec"; exit 1; }
-    done
   }
 
   release_docs() {
@@ -541,7 +542,6 @@ release_sdk() {
 
   case "$release_type" in
   "github") release_github "$@" ;;
-  "cocoapods") release_cocoapods "$@" ;;
   "docs" | "documentation") release_docs "$@" ;;
   *) echo "Unsupported Release: $release_type" ;;
   esac
@@ -649,7 +649,7 @@ verify_spm_headers() {
 
       mkdir -p include
 
-      headers=$(find . -name "*.h" -type f -not -path "./include/*" -not -path "**/Internal/*" -not -path "**/Basics/*")
+      headers=$(find . -name "*.h" -type f -not -path "./include/*" -not -path "**/Internal/*")
       echo "$(basename ${headers} )" | sort >| headers.txt
 
       cat headers.txt

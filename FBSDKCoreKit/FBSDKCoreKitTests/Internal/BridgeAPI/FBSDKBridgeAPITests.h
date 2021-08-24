@@ -17,7 +17,6 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #import <Foundation/Foundation.h>
-#import <OCMock/OCMock.h>
 #import <UIKit/UIKit.h>
 #import <XCTest/XCTest.h>
 
@@ -25,15 +24,17 @@
 
 #import "FBSDKBridgeAPI+Testing.h"
 #import "FBSDKCoreKitTests-Swift.h"
-#import "FBSDKTestCase.h"
-#import "FakeLoginManager.h"
 
-@interface FBSDKBridgeAPITests : FBSDKTestCase
+@interface FBSDKBridgeAPITests : XCTestCase
 
-@property FBSDKBridgeAPI *api;
-@property id partialMock;
+@property (nonatomic) FBSDKBridgeAPI *api;
+@property (nonatomic) TestLogger *logger;
 @property (readonly) NSURL *sampleUrl;
 @property (readonly) NSError *sampleError;
+@property (nonatomic) TestInternalURLOpener *urlOpener;
+@property (nonatomic) TestBridgeApiResponseFactory *bridgeAPIResponseFactory;
+@property (nonatomic) TestDylibResolver *frameworkLoader;
+@property (nonatomic) TestAppURLSchemeProvider *appURLSchemeProvider;
 
 extern NSString *const sampleSource;
 extern NSString *const sampleAnnotation;

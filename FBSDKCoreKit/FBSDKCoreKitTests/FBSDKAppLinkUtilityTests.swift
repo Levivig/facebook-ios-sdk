@@ -17,8 +17,50 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import FBSDKCoreKit
+import TestTools
 
-class FBSDKAppLinkUtilityTests: FBSDKTestCase {
+class FBSDKAppLinkUtilityTests: XCTestCase {
+
+  let requestFactory = TestGraphRequestFactory()
+  var bundle = TestBundle()
+
+  override func setUp() {
+    super.setUp()
+
+    TestAppEventsConfigurationProvider.stubbedConfiguration = SampleAppEventsConfigurations.valid
+    AppLinkUtility.configure(
+      requestProvider: requestFactory,
+      infoDictionaryProvider: bundle
+    )
+  }
+
+  override class func tearDown() {
+    super.tearDown()
+
+    // These can be removed when AppLinkUtility has all its dependencies provided.
+    AppEvents.reset()
+    AppEventsConfigurationManager.reset()
+    TestAppEventsConfigurationProvider.reset()
+    TestGateKeeperManager.reset()
+    TestSwizzler.reset()
+    TestAppEventsConfigurationProvider.reset()
+    TestLogger.reset()
+  }
+
+  func testConfiguringWithRequestProvider() {
+    XCTAssertTrue(
+      AppLinkUtility.requestProvider is TestGraphRequestFactory,
+      "Should use the provided request provider type"
+    )
+  }
+
+  func testConfiguringWithInfoDictionary() {
+    XCTAssertTrue(
+      AppLinkUtility.infoDictionaryProvider is TestBundle,
+      "Should use the provided info dictionary provider type"
+    )
+  }
+
   func testWithNoPromoCode() {
     let url = URL(string: "myapp://somelink/?someparam=somevalue")! // swiftlint:disable:this force_unwrapping
     let promoCode = AppLinkUtility.appInvitePromotionCode(from: url)
@@ -40,11 +82,54 @@ class FBSDKAppLinkUtilityTests: FBSDKTestCase {
         ]
       ]
     ]
+    bundle = TestBundle(infoDictionary: bundleDict)
 
-    let fakeBundle = FakeBundle(dictionary: bundleDict)
-    stubMainBundle(with: fakeBundle)
+    AppLinkUtility.configure(
+      requestProvider: requestFactory,
+      infoDictionaryProvider: bundle
+    )
 
     XCTAssertTrue(AppLinkUtility.isMatchURLScheme("fb123"))
     XCTAssertFalse(AppLinkUtility.isMatchURLScheme("not_in_url_schemes"))
+  }
+
+  func testRequestProviderAfterGraphRequest() {
+    // TODO: Remove these configure calls when both types are injected into the utility
+    AppEventsConfigurationManager.configure(
+      store: UserDefaultsSpy(),
+      settings: TestSettings(),
+      graphRequestFactory: TestGraphRequestFactory(),
+      graphRequestConnectionFactory: TestGraphRequestConnectionFactory()
+    )
+    AppEvents.singleton.configure(
+      withGateKeeperManager: TestGateKeeperManager.self,
+      appEventsConfigurationProvider: TestAppEventsConfigurationProvider.self,
+      serverConfigurationProvider: TestServerConfigurationProvider(),
+      graphRequestProvider: TestGraphRequestFactory(),
+      featureChecker: TestFeatureManager(),
+      store: UserDefaultsSpy(),
+      logger: TestLogger.self,
+      settings: TestSettings(),
+      paymentObserver: TestPaymentObserver(),
+      timeSpentRecorderFactory: TestTimeSpentRecorderFactory(),
+      appEventsStateStore: TestAppEventsStateStore(),
+      eventDeactivationParameterProcessor: TestAppEventsParameterProcessor(),
+      restrictiveDataFilterParameterProcessor: TestAppEventsParameterProcessor(),
+      atePublisherFactory: TestAtePublisherFactory(),
+      appEventsStateProvider: TestAppEventsStateProvider(),
+      swizzler: TestSwizzler.self,
+      advertiserIDProvider: TestAdvertiserIDProvider()
+    )
+
+    AppLinkUtility.fetchDeferredAppLink()
+    XCTAssertEqual(requestFactory.capturedGraphPath, "(null)/activities")
+    XCTAssertEqual(requestFactory.capturedHttpMethod, HTTPMethod(rawValue: "POST"))
+  }
+
+  func testValidatingConfiguration() {
+    AppLinkUtility.reset()
+    assertRaisesException(message: "Should throw an exception if the utility has not been configured") {
+      AppLinkUtility.validateConfiguration()
+    }
   }
 }

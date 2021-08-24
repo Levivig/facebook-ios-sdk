@@ -1,6 +1,6 @@
 Facebook welcomes contributions to our SDKs.
 
-All contributors must sign a [contributor license agreement](https://developers.facebook.com/opensource/cla).
+All contributors must sign a [contributor license agreement](https://code.facebook.com/cla).
 
 To contribute on behalf of your employer, sign the company CLA
 To contribute on behalf of yourself, sign the individual CLA
@@ -14,4 +14,6 @@ More information on the Apache License can be found [here](http://www.apache.org
 
 Setup:
 
-We use Carthage to manage our dependencies. You will need to run `carthage bootstrap` before you will be able to build the project.
+Run `./generate-projects.sh && open FacebookSDK.xcworkspace`. This will generate the Xcode projects and open the workspace.
+
+Note: We use Carthage to include OCMock in some unit tests. You will need to run `carthage bootstrap --no-build` before you will be able to build the tests.

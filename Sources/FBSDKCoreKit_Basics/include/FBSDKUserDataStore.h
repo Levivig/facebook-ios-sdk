@@ -21,10 +21,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// typedef for FBSDKAppEventUserDataType
-typedef NSString *const FBSDKAppEventUserDataType NS_TYPED_EXTENSIBLE_ENUM NS_SWIFT_NAME(AppEvents.UserDataType);
+typedef NSString *const FBSDKAppEventUserDataType NS_TYPED_EXTENSIBLE_ENUM; // NS_SWIFT_NAME(AppEvents.UserDataType);
 
 /** Parameter key used to specify user's email. */
-FOUNDATION_EXPORT FBSDKAppEventUserDataType FBSDKAppEventEmail;
 FOUNDATION_EXPORT FBSDKAppEventUserDataType FBSDKAppEventEmail;
 
 /** Parameter key used to specify user's first name. */
@@ -54,6 +53,9 @@ FOUNDATION_EXPORT FBSDKAppEventUserDataType FBSDKAppEventZip;
 /** Parameter key used to specify user's country. */
 FOUNDATION_EXPORT FBSDKAppEventUserDataType FBSDKAppEventCountry;
 
+/** Parameter key used to specify user's external id. */
+FOUNDATION_EXPORT FBSDKAppEventUserDataType FBSDKAppEventExternalId;
+
 NS_SWIFT_NAME(UserDataStore)
 @interface FBSDKUserDataStore : NSObject
 
@@ -73,6 +75,7 @@ NS_SWIFT_NAME(UserDataStore)
  @param state user's state
  @param zip user's zip
  @param country user's country
+ @param externalId user's external id
  */
 + (void)setUserEmail:(nullable NSString *)email
            firstName:(nullable NSString *)firstName
@@ -84,7 +87,8 @@ NS_SWIFT_NAME(UserDataStore)
                state:(nullable NSString *)state
                  zip:(nullable NSString *)zip
              country:(nullable NSString *)country
-NS_SWIFT_NAME(setUser(email:firstName:lastName:phone:dateOfBirth:gender:city:state:zip:country:));
+          externalId:(nullable NSString *)externalId
+NS_SWIFT_NAME(setUser(email:firstName:lastName:phone:dateOfBirth:gender:city:state:zip:country:externalId:));
 
 /*
   Returns the set user data else nil

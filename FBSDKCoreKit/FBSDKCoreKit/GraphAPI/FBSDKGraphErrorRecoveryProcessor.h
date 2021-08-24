@@ -22,16 +22,12 @@
 
 #import <Foundation/Foundation.h>
 
-#ifdef BUCK
-#import <FBSDKCoreKit/FBSDKConstants.h>
-#else
 #import "FBSDKConstants.h"
-#endif
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class FBSDKGraphErrorRecoveryProcessor;
-@class FBSDKGraphRequest;
+@protocol FBSDKGraphRequest;
 
 /**
   Defines a delegate for `FBSDKGraphErrorRecoveryProcessor`.
@@ -92,13 +88,16 @@ NS_ASSUME_NONNULL_BEGIN
  the `[FBSDKAccessToken currentAccessToken]` might still have been updated.
  .
  */
-NS_SWIFT_UNAVAILABLE("")
+NS_SWIFT_NAME(GraphErrorRecoveryProcessor)
 @interface FBSDKGraphErrorRecoveryProcessor : NSObject
 
++ (instancetype)new DEPRECATED_MSG_ATTRIBUTE("Creating instances of FBSDKGraphErrorRecoveryProcessor using `new` is deprecated and will be removed in the next major release");
+- (instancetype)init DEPRECATED_MSG_ATTRIBUTE("Creating instances of FBSDKGraphErrorRecoveryProcessor using `init` is deprecated and will be removed in the next major release");
+
 /**
-  Gets the delegate. Note this is a strong reference, and is nil'ed out after recovery is complete.
+ Initializes a GraphErrorRecoveryProcessor with an access token string.
  */
-@property (nonatomic, strong, readonly, nullable) id<FBSDKGraphErrorRecoveryProcessorDelegate>delegate;
+- (instancetype)initWithAccessTokenString:(NSString *)accessTokenString;
 
 /**
   Attempts to process the error, return YES if the error can be processed.
@@ -107,15 +106,8 @@ NS_SWIFT_UNAVAILABLE("")
  @param delegate the delegate that will be retained until recovery is complete.
  */
 - (BOOL)processError:(NSError *)error
-             request:(FBSDKGraphRequest *)request
+             request:(id<FBSDKGraphRequest>)request
             delegate:(nullable id<FBSDKGraphErrorRecoveryProcessorDelegate>)delegate;
-
-/**
-  The callback for FBSDKErrorRecoveryAttempting
- @param didRecover if the recovery succeeded
- @param contextInfo unused
- */
-- (void)didPresentErrorWithRecovery:(BOOL)didRecover contextInfo:(nullable void *)contextInfo;
 
 @end
 

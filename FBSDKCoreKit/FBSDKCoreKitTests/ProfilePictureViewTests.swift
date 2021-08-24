@@ -17,33 +17,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import FBSDKCoreKit
+import TestTools
 import XCTest
 
-class ProfilePictureView: XCTestCase {
-  var sampleProfile: Profile {
-    return Profile(
-      userID: "Sample ID",
-      firstName: nil,
-      middleName: nil,
-      lastName: nil,
-      name: "Sample Name",
-      linkURL: nil,
-      refreshDate: nil,
-      imageURL: URL(string:"https://www.facebook.com/"),
-      email:nil
-    )
-  }
-  var sampleProfileWithoutImageURL: Profile {
-    return Profile(
-      userID: "Sample ID",
-      firstName: nil,
-      middleName: nil,
-      lastName: nil,
-      name: "Sample Name",
-      linkURL: nil,
-      refreshDate: nil
-    )
-  }
+class ProfilePictureViewTests: XCTestCase {
 
   override func setUp() {
     super.setUp()
@@ -55,9 +32,9 @@ class ProfilePictureView: XCTestCase {
   // MARK: - Update Image
 
   func testImageUpdateWithoutAccessTokenWithProfile() {
-    let view = TestView()
+    let view = TestProfilePictureView()
     AccessToken.setCurrent(nil, shouldDispatchNotif: false)
-    Profile.setCurrent(sampleProfile, shouldPostNotification: false)
+    Profile.setCurrent(SampleUserProfiles.valid, shouldPostNotification: false)
 
     view._updateImage()
 
@@ -74,9 +51,9 @@ class ProfilePictureView: XCTestCase {
   }
 
   func testImageUpdateWithAccessTokenWithProfile() {
-    let view = TestView()
-    AccessToken.setCurrent(SampleAccessToken.validToken, shouldDispatchNotif: false)
-    Profile.setCurrent(sampleProfile, shouldPostNotification: false)
+    let view = TestProfilePictureView()
+    AccessToken.setCurrent(SampleAccessTokens.validToken, shouldDispatchNotif: false)
+    Profile.setCurrent(SampleUserProfiles.valid, shouldPostNotification: false)
 
     view._updateImage()
 
@@ -93,7 +70,7 @@ class ProfilePictureView: XCTestCase {
   }
 
   func testImageUpdateWithoutAccessTokenWithoutProfile() {
-    let view = TestView()
+    let view = TestProfilePictureView()
     AccessToken.setCurrent(nil, shouldDispatchNotif: false)
     Profile.setCurrent(nil, shouldPostNotification: false)
 
@@ -112,9 +89,9 @@ class ProfilePictureView: XCTestCase {
   }
 
   func testImageUpdateWithoutAccessTokenWithProfileNoImageURL() {
-    let view = TestView()
+    let view = TestProfilePictureView()
     AccessToken.setCurrent(nil, shouldDispatchNotif: false)
-    Profile.setCurrent(sampleProfileWithoutImageURL, shouldPostNotification: false)
+    Profile.setCurrent(SampleUserProfiles.missingImageUrl, shouldPostNotification: false)
 
     view._updateImage()
 
@@ -133,7 +110,7 @@ class ProfilePictureView: XCTestCase {
   // MARK: - Token Notifications
 
   func testReceivingAccessTokenNotificationWithDidChangeUserIdKey() {
-    let view = TestView()
+    let view = TestProfilePictureView()
     let notification = Notification(
       name: .AccessTokenDidChange,
       object: nil,
@@ -149,9 +126,8 @@ class ProfilePictureView: XCTestCase {
     )
   }
 
-
   func testReceivingAccessTokenNotificationWithoutRelevantUserInfo() {
-    let view = TestView()
+    let view = TestProfilePictureView()
     let notification = Notification(
       name: .AccessTokenDidChange,
       object: nil,
@@ -168,8 +144,8 @@ class ProfilePictureView: XCTestCase {
   }
 
   func testReceivingProfileNotification() {
-    let view = TestView()
-    Profile.setCurrent(sampleProfile, shouldPostNotification: false)
+    let view = TestProfilePictureView()
+    Profile.setCurrent(SampleUserProfiles.valid, shouldPostNotification: false)
     let notification = Notification(
       name: .ProfileDidChange,
       object: nil,
@@ -188,8 +164,8 @@ class ProfilePictureView: XCTestCase {
   // MARK: - Updating Content
 
   func testUpdatinImageWithProfileWithImageURL() {
-    let view = TestView()
-    Profile.setCurrent(sampleProfile, shouldPostNotification: false)
+    let view = TestProfilePictureView()
+    Profile.setCurrent(SampleUserProfiles.valid, shouldPostNotification: false)
 
     view._updateImageWithProfile()
 
@@ -198,12 +174,12 @@ class ProfilePictureView: XCTestCase {
       1,
       "Should try to fetch image for a profile that have an imageURL"
     )
-    XCTAssertNotNil(view.lastState(), "Should update state when profile has an imageURL");
+    XCTAssertNotNil(view.lastState(), "Should update state when profile has an imageURL")
   }
 
   func testUpdatinImageWithProfileWithoutImageURL() {
-    let view = TestView()
-    Profile.setCurrent(sampleProfileWithoutImageURL, shouldPostNotification: false)
+    let view = TestProfilePictureView()
+    Profile.setCurrent(SampleUserProfiles.missingImageUrl, shouldPostNotification: false)
 
     view._updateImageWithProfile()
 
@@ -216,8 +192,8 @@ class ProfilePictureView: XCTestCase {
   }
 
   func testUpdatingImageWithValidAccessToken() {
-    let view = TestView()
-    AccessToken.setCurrent(SampleAccessToken.validToken, shouldDispatchNotif: false)
+    let view = TestProfilePictureView()
+    AccessToken.setCurrent(SampleAccessTokens.validToken, shouldDispatchNotif: false)
 
     view._updateImageWithAccessToken()
 
@@ -226,12 +202,12 @@ class ProfilePictureView: XCTestCase {
       1,
       "Should try to fetch image for a valid access token"
     )
-    XCTAssertNotNil(view.lastState(), "Should update state when access token is valid");
+    XCTAssertNotNil(view.lastState(), "Should update state when access token is valid")
   }
 
   func testUpdatingImageWithInvalidAccessToken() {
-    let view = TestView()
-    AccessToken.setCurrent(SampleAccessToken.expiredToken, shouldDispatchNotif: false)
+    let view = TestProfilePictureView()
+    AccessToken.setCurrent(SampleAccessTokens.expiredToken, shouldDispatchNotif: false)
 
     view._updateImageWithAccessToken()
 
@@ -244,7 +220,7 @@ class ProfilePictureView: XCTestCase {
   }
 }
 
-class TestView: FBProfilePictureView {
+private class TestProfilePictureView: FBProfilePictureView {
   var updateImageWithAccessTokenCount = 0
   var updateImageWithProfileCount = 0
   var fetchAndSetImageCount = 0
@@ -261,7 +237,7 @@ class TestView: FBProfilePictureView {
     super._updateImageWithProfile()
   }
 
-  override func _fetchAndSetImage(with url:URL?, state:FBProfilePictureViewState) {
+  override func _fetchAndSetImage(with url: URL?, state: FBProfilePictureViewState) {
     fetchAndSetImageCount += 1
   }
 }

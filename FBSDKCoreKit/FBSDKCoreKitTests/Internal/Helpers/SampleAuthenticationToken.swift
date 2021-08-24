@@ -17,15 +17,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 @objcMembers
-public class SampleAuthenticationToken: NSObject {
+class SampleAuthenticationToken: NSObject {
 
-  public static var validToken: AuthenticationToken {
-    return AuthenticationToken(
+  static var validToken: AuthenticationToken {
+    AuthenticationToken(
       tokenString: "fakeTokenString",
-      nonce: "fakeNonce",
-      claims: nil,
-      jti: "fakeJTI"
+      nonce: "fakeNonce"
     )
   }
-
 }

@@ -18,11 +18,7 @@
 
 #import "FBSDKShareVideo.h"
 
-#ifdef FBSDKCOCOAPODS
- #import <FBSDKCoreKit/FBSDKCoreKit+Internal.h>
-#else
- #import "FBSDKCoreKit+Internal.h"
-#endif
+#import "FBSDKHasher.h"
 #import "FBSDKShareConstants.h"
 #import "FBSDKSharePhoto.h"
 #import "FBSDKShareUtility.h"
@@ -38,14 +34,14 @@ NSString *const kFBSDKShareVideoURLKey = @"videoURL";
 
 + (instancetype)videoWithData:(NSData *)data
 {
-  FBSDKShareVideo *video = [[FBSDKShareVideo alloc] init];
+  FBSDKShareVideo *video = [FBSDKShareVideo new];
   video.data = data;
   return video;
 }
 
 + (instancetype)videoWithData:(NSData *)data previewPhoto:(FBSDKSharePhoto *)previewPhoto
 {
-  FBSDKShareVideo *video = [[FBSDKShareVideo alloc] init];
+  FBSDKShareVideo *video = [FBSDKShareVideo new];
   video.data = data;
   video.previewPhoto = previewPhoto;
   return video;
@@ -53,14 +49,14 @@ NSString *const kFBSDKShareVideoURLKey = @"videoURL";
 
 + (instancetype)videoWithVideoAsset:(PHAsset *)videoAsset
 {
-  FBSDKShareVideo *video = [[FBSDKShareVideo alloc] init];
+  FBSDKShareVideo *video = [FBSDKShareVideo new];
   video.videoAsset = videoAsset;
   return video;
 }
 
 + (instancetype)videoWithVideoAsset:(PHAsset *)videoAsset previewPhoto:(FBSDKSharePhoto *)previewPhoto
 {
-  FBSDKShareVideo *video = [[FBSDKShareVideo alloc] init];
+  FBSDKShareVideo *video = [FBSDKShareVideo new];
   video.videoAsset = videoAsset;
   video.previewPhoto = previewPhoto;
   return video;
@@ -68,14 +64,14 @@ NSString *const kFBSDKShareVideoURLKey = @"videoURL";
 
 + (instancetype)videoWithVideoURL:(NSURL *)videoURL
 {
-  FBSDKShareVideo *video = [[FBSDKShareVideo alloc] init];
+  FBSDKShareVideo *video = [FBSDKShareVideo new];
   video.videoURL = videoURL;
   return video;
 }
 
 + (instancetype)videoWithVideoURL:(NSURL *)videoURL previewPhoto:(FBSDKSharePhoto *)previewPhoto
 {
-  FBSDKShareVideo *video = [[FBSDKShareVideo alloc] init];
+  FBSDKShareVideo *video = [FBSDKShareVideo new];
   video.videoURL = videoURL;
   video.previewPhoto = previewPhoto;
   return video;
@@ -117,7 +113,7 @@ NSString *const kFBSDKShareVideoURLKey = @"videoURL";
     _videoURL.hash,
     _previewPhoto.hash,
   };
-  return [FBSDKMath hashWithIntegerArray:subhashes count:sizeof(subhashes) / sizeof(subhashes[0])];
+  return [FBSDKHasher hashWithIntegerArray:subhashes count:sizeof(subhashes) / sizeof(subhashes[0])];
 }
 
 - (BOOL)isEqual:(id)object
@@ -134,10 +130,10 @@ NSString *const kFBSDKShareVideoURLKey = @"videoURL";
 - (BOOL)isEqualToShareVideo:(FBSDKShareVideo *)video
 {
   return (video
-    && [FBSDKInternalUtility object:_data isEqualToObject:video.data]
-    && [FBSDKInternalUtility object:_videoAsset isEqualToObject:video.videoAsset]
-    && [FBSDKInternalUtility object:_videoURL isEqualToObject:video.videoURL]
-    && [FBSDKInternalUtility object:_previewPhoto isEqualToObject:video.previewPhoto]);
+    && [FBSDKInternalUtility.sharedUtility object:_data isEqualToObject:video.data]
+    && [FBSDKInternalUtility.sharedUtility object:_videoAsset isEqualToObject:video.videoAsset]
+    && [FBSDKInternalUtility.sharedUtility object:_videoURL isEqualToObject:video.videoURL]
+    && [FBSDKInternalUtility.sharedUtility object:_previewPhoto isEqualToObject:video.previewPhoto]);
 }
 
 #pragma mark - FBSDKSharingValidation
@@ -260,7 +256,7 @@ NSString *const kFBSDKShareVideoURLKey = @"videoURL";
 
 - (id)copyWithZone:(NSZone *)zone
 {
-  FBSDKShareVideo *copy = [[FBSDKShareVideo alloc] init];
+  FBSDKShareVideo *copy = [FBSDKShareVideo new];
   copy->_data = [_data copy];
   copy->_videoAsset = [_videoAsset copy];
   copy->_videoURL = [_videoURL copy];

@@ -42,7 +42,7 @@ static NSRegularExpression *HashtagRegularExpression()
 
 + (instancetype)hashtagWithString:(NSString *)hashtagString
 {
-  FBSDKHashtag *hashtag = [[self alloc] init];
+  FBSDKHashtag *hashtag = [self new];
   hashtag.stringRepresentation = hashtagString;
   return hashtag;
 }
@@ -92,7 +92,7 @@ static NSRegularExpression *HashtagRegularExpression()
 - (BOOL)isEqualToHashtag:(FBSDKHashtag *)hashtag
 {
   return (hashtag
-    && [FBSDKInternalUtility object:_stringRepresentation isEqualToObject:hashtag.stringRepresentation]);
+    && [FBSDKInternalUtility.sharedUtility object:_stringRepresentation isEqualToObject:hashtag.stringRepresentation]);
 }
 
 #pragma mark - NSCoding
@@ -119,7 +119,7 @@ static NSRegularExpression *HashtagRegularExpression()
 
 - (id)copyWithZone:(NSZone *)zone
 {
-  FBSDKHashtag *copy = [[FBSDKHashtag alloc] init];
+  FBSDKHashtag *copy = [FBSDKHashtag new];
   copy.stringRepresentation = [_stringRepresentation copy];
   return copy;
 }

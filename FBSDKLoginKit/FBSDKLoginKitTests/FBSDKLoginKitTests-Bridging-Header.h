@@ -21,16 +21,35 @@
 #import "FBSDKCoreKit+Internal.h"
 
 #ifdef BUCK
- #import <FBSDKLoginKit+Internal/FBSDKGraphRequestConnectionProviding.h>
+ #import <FBSDKLoginKit+Internal/FBSDKAuthenticationTokenCreating.h>
+ #import <FBSDKLoginKit+Internal/FBSDKAuthenticationTokenFactory.h>
+ #import <FBSDKLoginKit+Internal/FBSDKAuthenticationTokenHeader.h>
+ #import <FBSDKLoginKit+Internal/FBSDKDevicePoller.h>
+ #import <FBSDKLoginKit+Internal/FBSDKDevicePolling.h>
+ #import <FBSDKLoginKit+Internal/FBSDKLoginCompletion+Internal.h>
+ #import <FBSDKLoginKit+Internal/FBSDKLoginProviding.h>
  #import <FBSDKLoginKit+Internal/FBSDKNonceUtility.h>
  #import <FBSDKLoginKit+Internal/FBSDKPermission.h>
+ #import <FBSDKLoginKit+Internal/FBSDKProfileFactory.h>
 #else
- #import "FBSDKGraphRequestConnectionProviding.h"
+ #import "FBSDKAuthenticationTokenCreating.h"
+ #import "FBSDKAuthenticationTokenFactory.h"
+ #import "FBSDKAuthenticationTokenHeader.h"
+ #import "FBSDKDevicePoller.h"
+ #import "FBSDKDevicePolling.h"
+ #import "FBSDKLoginCompletion+Internal.h"
+ #import "FBSDKLoginProviding.h"
  #import "FBSDKNonceUtility.h"
  #import "FBSDKPermission.h"
+ #import "FBSDKProfileFactory.h"
 #endif
 
+#import "FBSDKInternalUtility+Testing.h"
+#import "FBSDKSettings+Testing.h"
+
 @class FBSDKAuthenticationTokenClaims;
+
+@protocol FBSDKLoginProviding;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -48,6 +67,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)_profileDidChangeNotification:(NSNotification *)notification;
 - (nullable NSString *)userName;
 - (nullable NSString *)userID;
+- (void)setLoginProvider:(id<FBSDKLoginProviding>)loginProvider;
+- (void)_buttonPressed:(id)sender;
+- (void)_logout;
+- (void)setGraphRequestFactory:(nonnull id<FBSDKGraphRequestProviding>)graphRequestFactory;
 
 @end
 
@@ -55,6 +78,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)setCurrentAccessToken:(nullable FBSDKAccessToken *)token
           shouldDispatchNotif:(BOOL)shouldDispatchNotif;
+
+@end
+
+@interface FBSDKAppEvents (Testing)
+
++ (void)setSingletonInstanceToInstance:(FBSDKAppEvents *)appEvents;
+- (void)logInternalEvent:(FBSDKAppEventName)eventName
+              parameters:(NSDictionary *)parameters
+      isImplicitlyLogged:(BOOL)isImplicitlyLogged;
+- (instancetype)initWithFlushBehavior:(FBSDKAppEventsFlushBehavior)flushBehavior
+                 flushPeriodInSeconds:(int)flushPeriodInSeconds; // expose this since init is NS_UNAVAILABLE
 
 @end
 
@@ -68,12 +102,44 @@ NS_ASSUME_NONNULL_BEGIN
 @interface FBSDKAuthenticationToken (Testing)
 
 - (instancetype)initWithTokenString:(NSString *)tokenString
-                              nonce:(NSString *)nonce
-                             claims:(nullable FBSDKAuthenticationTokenClaims *)claims
-                                jti:(NSString *)jti;
+                              nonce:(NSString *)nonce;
 
-+ (void)setCurrentAuthenticationToken:(nullable FBSDKAuthenticationToken *)token
-               shouldPostNotification:(BOOL)shouldPostNotification;
++ (void)setCurrentAuthenticationToken:(nullable FBSDKAuthenticationToken *)token;
+
+@end
+
+@interface FBSDKDeviceLoginManagerResult (Testing)
+
+- (instancetype)initWithToken:(nullable FBSDKAccessToken *)token
+                  isCancelled:(BOOL)cancelled;
+
+@end
+
+@interface FBSDKDeviceLoginManager (Testing)
+
+- (instancetype)initWithPermissions:(NSArray<NSString *> *)permissions enableSmartLogin:(BOOL)enableSmartLogin
+                graphRequestFactory:(nonnull id<FBSDKGraphRequestProviding>)connectionProvider
+                       devicePoller:(id<FBSDKDevicePolling>)poller;
+
+- (void)_schedulePoll:(NSUInteger)interval;
+
+- (void)setCodeInfo:(FBSDKDeviceLoginCodeInfo *)codeInfo;
+
+- (void)_notifyError:(NSError *)error;
+
+- (void)_notifyToken:(nullable NSString *)tokenString withExpirationDate:(nullable NSDate *)expirationDate withDataAccessExpirationDate:(nullable NSDate *)dataAccessExpirationDate;
+
+- (void)_processError:(NSError *)error;
+
+@end
+
+@interface FBSDKDeviceLoginCodeInfo (Testing)
+
+- (instancetype)initWithIdentifier:(NSString *)identifier
+                         loginCode:(NSString *)loginCode
+                   verificationURL:(NSURL *)verificationURL
+                    expirationDate:(NSDate *)expirationDate
+                   pollingInterval:(NSUInteger)pollingInterval;
 
 @end
 

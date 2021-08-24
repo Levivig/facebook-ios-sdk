@@ -24,11 +24,9 @@
 
  #import <Social/Social.h>
 
- #ifdef FBSDKCOCOAPODS
-  #import <FBSDKCoreKit/FBSDKCoreKit+Internal.h>
- #else
-  #import "FBSDKCoreKit+Internal.h"
- #endif
+ #import "FBSDKCoreKitBasicsImportForShareKit.h"
+ #import "FBSDKCoreKitImport.h"
+ #import "FBSDKShareAppEventNames.h"
  #import "FBSDKShareCameraEffectContent.h"
  #import "FBSDKShareConstants.h"
  #import "FBSDKShareDefines.h"
@@ -50,11 +48,14 @@
  #define FBSDK_SHARE_METHOD_QUOTE_MIN_VERSION @"20160328"
  #define FBSDK_SHARE_METHOD_MMP_MIN_VERSION @"20160328"
 
+FBSDKAppEventName FBSDKAppEventNameFBSDKEventShareDialogShow = @"fb_dialog_share_show";
+FBSDKAppEventName FBSDKAppEventNameFBSDKEventShareDialogResult = @"fb_dialog_share_result";
+
 static inline void FBSDKShareDialogValidateAPISchemeRegisteredForCanOpenUrl()
 {
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
-    [FBSDKInternalUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_FBAPI];
+    [FBSDKInternalUtility.sharedUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_FBAPI];
   });
 }
 
@@ -62,13 +63,16 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
 {
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
-    [FBSDKInternalUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_SHARE_EXTENSION];
+    [FBSDKInternalUtility.sharedUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_SHARE_EXTENSION];
   });
 }
 
 @interface FBSDKShareDialog () <FBSDKWebDialogDelegate>
 @end
 
+ #if FBSDK_SWIFT_PACKAGE
+NS_EXTENSION_UNAVAILABLE("The Facebook iOS SDK is not currently supported in extensions")
+ #endif
 @implementation FBSDKShareDialog
 {
   FBSDKWebDialog *_webDialog;
@@ -80,8 +84,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
 + (void)initialize
 {
   if ([FBSDKShareDialog class] == self) {
-    [FBSDKInternalUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_FACEBOOK];
-    [FBSDKServerConfigurationManager loadServerConfigurationWithCompletionBlock:NULL];
+    [FBSDKInternalUtility.sharedUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_FACEBOOK];
   }
 }
 
@@ -89,7 +92,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
                              withContent:(id<FBSDKSharingContent>)content
                                 delegate:(nullable id<FBSDKSharingDelegate>)delegate
 {
-  FBSDKShareDialog *dialog = [[self alloc] init];
+  FBSDKShareDialog *dialog = [self new];
   dialog.fromViewController = viewController;
   dialog.shareContent = content;
   dialog.delegate = delegate;
@@ -111,7 +114,6 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
 
 - (void)dealloc
 {
-  _webDialog.delegate = nil;
   if (_temporaryFiles) {
     NSFileManager *const fileManager = [NSFileManager defaultManager];
     for (NSURL *temporaryFile in _temporaryFiles) {
@@ -194,10 +196,12 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
     }
   }
   if (!didShow) {
-    [self _invokeDelegateDidFailWithError:error ?: validationError];
+    if (error || validationError) {
+      [self _invokeDelegateDidFailWithError:error ?: validationError];
+    }
   } else {
     [self _logDialogShow];
-    [FBSDKInternalUtility registerTransientObject:self];
+    [FBSDKInternalUtility.sharedUtility registerTransientObject:self];
   }
   return didShow;
 }
@@ -231,7 +235,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
     // not all web dialogs report cancellation, so assume that the share has completed with no additional information
     [self _handleWebResponseParameters:results error:nil cancelled:NO];
   }
-  [FBSDKInternalUtility unregisterTransientObject:self];
+  [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
 }
 
 - (void)webDialog:(FBSDKWebDialog *)webDialog didFailWithError:(NSError *)error
@@ -241,7 +245,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   }
   [self _cleanUpWebDialog];
   [self _invokeDelegateDidFailWithError:error];
-  [FBSDKInternalUtility unregisterTransientObject:self];
+  [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
 }
 
 - (void)webDialogDidCancel:(FBSDKWebDialog *)webDialog
@@ -251,7 +255,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   }
   [self _cleanUpWebDialog];
   [self _invokeDelegateDidCancel];
-  [FBSDKInternalUtility unregisterTransientObject:self];
+  [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
 }
 
  #pragma mark - Helper Methods
@@ -261,8 +265,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   if ([self.shareContent isKindOfClass:[FBSDKShareCameraEffectContent class]]) {
     return NO;
   }
-  FBSDKServerConfiguration *configuration = [FBSDKServerConfigurationManager cachedServerConfiguration];
-  return [configuration.defaultShareMode isEqualToString:@"share_sheet"];
+  return [[[FBSDKShareDialogConfiguration new] defaultShareMode] isEqualToString:@"share_sheet"];
 }
 
 - (BOOL)_showAutomatic:(NSError **)errorRef
@@ -320,12 +323,12 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
 
 - (BOOL)_canShowNative
 {
-  return [FBSDKInternalUtility isFacebookAppInstalled];
+  return [FBSDKInternalUtility.sharedUtility isFacebookAppInstalled];
 }
 
 - (BOOL)_canShowShareSheet
 {
-  if (![FBSDKInternalUtility isFacebookAppInstalled]) {
+  if (![FBSDKInternalUtility.sharedUtility isFacebookAppInstalled]) {
     return NO;
   }
 
@@ -347,7 +350,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   FBSDKShareDialogValidateAPISchemeRegisteredForCanOpenUrl();
   NSString *scheme = FBSDK_CANOPENURL_FBAPI;
   NSString *minimumVersion = FBSDK_SHARE_METHOD_ATTRIBUTED_SHARE_SHEET_MIN_VERSION;
-  NSURLComponents *components = [[NSURLComponents alloc] init];
+  NSURLComponents *components = [NSURLComponents new];
   components.scheme = [scheme stringByAppendingString:minimumVersion];
   components.path = @"/";
   return ([[UIApplication sharedApplication] canOpenURL:components.URL]
@@ -357,7 +360,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
 - (BOOL)_canUseFBShareSheet
 {
   FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanOpenUrl();
-  NSURLComponents *components = [[NSURLComponents alloc] init];
+  NSURLComponents *components = [NSURLComponents new];
   components.scheme = FBSDK_CANOPENURL_SHARE_EXTENSION;
   components.path = @"/";
   return [[UIApplication sharedApplication] canOpenURL:components.URL];
@@ -377,7 +380,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
 {
   FBSDKShareDialogValidateAPISchemeRegisteredForCanOpenUrl();
   NSString *scheme = FBSDK_CANOPENURL_FBAPI;
-  NSURLComponents *components = [[NSURLComponents alloc] init];
+  NSURLComponents *components = [NSURLComponents new];
   components.scheme = [scheme stringByAppendingString:minimumVersion];
   components.path = @"/";
   return [[UIApplication sharedApplication] canOpenURL:components.URL];
@@ -385,7 +388,6 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
 
 - (void)_cleanUpWebDialog
 {
-  _webDialog.delegate = nil;
   _webDialog = nil;
 }
 
@@ -481,7 +483,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
       [self _invokeDelegateDidCancel];
     } else {
       // not all web dialogs report cancellation, so assume that the share has completed with no additional information
-      NSMutableDictionary *results = [[NSMutableDictionary alloc] init];
+      NSMutableDictionary *results = [NSMutableDictionary new];
       // the web response comes back with a different payload, so we need to translate it
       [FBSDKTypeUtility dictionary:results
                          setObject:webResponseParameters[FBSDK_SHARE_WEB_PARAM_POST_ID_KEY]
@@ -512,7 +514,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
       if (successfullyBuilt) {
         FBSDKBridgeAPIResponseBlock completionBlock = ^(FBSDKBridgeAPIResponse *response) {
           [self _handleWebResponseParameters:response.responseParameters error:response.error cancelled:response.isCancelled];
-          [FBSDKInternalUtility unregisterTransientObject:self];
+          [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
         };
         FBSDKBridgeAPIRequest *request;
         request = [FBSDKBridgeAPIRequest bridgeAPIRequestWithProtocolType:FBSDKBridgeAPIProtocolTypeWeb
@@ -541,7 +543,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
     }
     FBSDKBridgeAPIResponseBlock completionBlock = ^(FBSDKBridgeAPIResponse *response) {
       [self _handleWebResponseParameters:response.responseParameters error:response.error cancelled:response.isCancelled];
-      [FBSDKInternalUtility unregisterTransientObject:self];
+      [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
     };
     FBSDKBridgeAPIRequest *request;
     request = [FBSDKBridgeAPIRequest bridgeAPIRequestWithProtocolType:FBSDKBridgeAPIProtocolTypeWeb
@@ -567,7 +569,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   NSDictionary *parameters = [FBSDKShareUtility feedShareDictionaryForContent:shareContent];
   FBSDKBridgeAPIResponseBlock completionBlock = ^(FBSDKBridgeAPIResponse *response) {
     [self _handleWebResponseParameters:response.responseParameters error:response.error cancelled:response.isCancelled];
-    [FBSDKInternalUtility unregisterTransientObject:self];
+    [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
   };
   FBSDKBridgeAPIRequest *request;
   request = [FBSDKBridgeAPIRequest bridgeAPIRequestWithProtocolType:FBSDKBridgeAPIProtocolTypeWeb
@@ -645,13 +647,13 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
     } else if (response.error) {
       [self _invokeDelegateDidFailWithError:response.error];
     } else {
-      NSMutableDictionary *results = [[NSMutableDictionary alloc] init];
+      NSMutableDictionary *results = [NSMutableDictionary new];
       [FBSDKTypeUtility dictionary:results
                          setObject:responseParameters[FBSDK_SHARE_RESULT_POST_ID_KEY]
                             forKey:FBSDK_SHARE_RESULT_POST_ID_KEY];
       [self _invokeDelegateDidCompleteWithResults:results];
     }
-    [FBSDKInternalUtility unregisterTransientObject:self];
+    [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
   };
   [[FBSDKBridgeAPI sharedInstance] openBridgeAPIRequest:request
                                 useSafariViewController:[self _useSafariViewController]
@@ -726,7 +728,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
       }
     }
     dispatch_async(dispatch_get_main_queue(), ^{
-      [FBSDKInternalUtility unregisterTransientObject:self];
+      [FBSDKInternalUtility.sharedUtility unregisterTransientObject:self];
     });
   };
   [fromViewController presentViewController:composeViewController animated:YES completion:nil];
@@ -758,8 +760,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   if ([self.shareContent isKindOfClass:[FBSDKShareCameraEffectContent class]]) {
     return YES;
   }
-  FBSDKServerConfiguration *configuration = [FBSDKServerConfigurationManager cachedServerConfiguration];
-  return [configuration useNativeDialogForDialogName:FBSDKDialogConfigurationNameShare];
+  return [[FBSDKShareDialogConfiguration new] shouldUseNativeDialogForDialogName:FBSDKDialogConfigurationNameShare];
 }
 
 - (BOOL)_useSafariViewController
@@ -767,8 +768,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   if ([self.shareContent isKindOfClass:[FBSDKShareCameraEffectContent class]]) {
     return NO;
   }
-  FBSDKServerConfiguration *configuration = [FBSDKServerConfigurationManager cachedServerConfiguration];
-  return [configuration useSafariViewControllerForDialogName:FBSDKDialogConfigurationNameShare];
+  return [[FBSDKShareDialogConfiguration new] shouldUseSafariViewControllerForDialogName:FBSDKDialogConfigurationNameShare];
 }
 
 - (BOOL)_validateWithError:(NSError **)errorRef
@@ -1082,7 +1082,7 @@ static inline void FBSDKShareDialogValidateShareExtensionSchemeRegisteredForCanO
   [_delegate sharer:self didCompleteWithResults:[results copy]];
 }
 
-- (void)_invokeDelegateDidFailWithError:(NSError *)error
+- (void)_invokeDelegateDidFailWithError:(nonnull NSError *)error
 {
   NSDictionary *parameters = @{
     FBSDKAppEventParameterDialogOutcome : FBSDKAppEventsDialogOutcomeValue_Failed,

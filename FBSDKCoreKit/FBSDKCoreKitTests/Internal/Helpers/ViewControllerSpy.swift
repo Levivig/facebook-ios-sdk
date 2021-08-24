@@ -19,44 +19,45 @@
 import UIKit
 
 @objcMembers
-public class ViewControllerSpy: UIViewController {
+class ViewControllerSpy: UIViewController {
 
-  public var capturedDismissCompletion: (() -> Void)?
-  public var dismissWasCalled = false
-  public var capturedPresentViewController: UIViewController?
-  public var capturedPresentViewControllerAnimated = false
-  public var capturedPresentViewControllerCompletion: (() -> Void)?
+  var capturedDismissCompletion: (() -> Void)?
+  var dismissWasCalled = false
+  var capturedPresentViewController: UIViewController?
+  var capturedPresentViewControllerAnimated = false
+  var capturedPresentViewControllerCompletion: (() -> Void)?
 
   /// Used for providing a value to return for the readonly `transitionCoordinator` property
-  public var stubbedTransitionCoordinator: UIViewControllerTransitionCoordinator? = nil
+  var stubbedTransitionCoordinator: UIViewControllerTransitionCoordinator?
 
   // Overriding with no implementation to stub the property
-  public override var transitionCoordinator: UIViewControllerTransitionCoordinator? {
-    return stubbedTransitionCoordinator
+  override var transitionCoordinator: UIViewControllerTransitionCoordinator? {
+    stubbedTransitionCoordinator
   }
 
   private lazy var presenting = {
     ViewControllerSpy.makeDefaultSpy()
   }()
 
-  public override var presentingViewController: UIViewController? {
-    return presenting
+  override var presentingViewController: UIViewController? {
+    presenting
   }
 
-  public override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
+  override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
     dismissWasCalled = true
     capturedDismissCompletion = completion
   }
 
-  public static func makeDefaultSpy() -> ViewControllerSpy {
-    return ViewControllerSpy()
+  static func makeDefaultSpy() -> ViewControllerSpy {
+    ViewControllerSpy()
   }
 
   // Overriding with no implementation to stub the method
-  public override func present(
+  override func present(
     _ viewControllerToPresent: UIViewController,
     animated: Bool,
-    completion: (() -> Void)? = nil) {
+    completion: (() -> Void)? = nil
+  ) {
     capturedPresentViewController = viewControllerToPresent
     capturedPresentViewControllerAnimated = animated
     capturedPresentViewControllerCompletion = completion

@@ -27,6 +27,8 @@
  #else
   #import "FBSDKCoreKit+Internal.h"
  #endif
+
+ #import "FBSDKCoreKitBasicsImportForShareKit.h"
  #import "FBSDKShareUtility.h"
 
 static NSString *const FBSDKCameraEffectTexturesTexturesKey = @"textures";
@@ -81,7 +83,7 @@ static NSString *const FBSDKCameraEffectTexturesTexturesKey = @"textures";
 
 - (BOOL)isEqualToCameraEffectTextures:(FBSDKCameraEffectTextures *)object
 {
-  return [FBSDKInternalUtility object:_textures isEqualToObject:[object allTextures]];
+  return [FBSDKInternalUtility.sharedUtility object:_textures isEqualToObject:[object allTextures]];
 }
 
  #pragma mark - NSCoding
@@ -127,7 +129,7 @@ static NSString *const FBSDKCameraEffectTexturesTexturesKey = @"textures";
 
 - (id)_valueForKey:(NSString *)key
 {
-  key = [FBSDKTypeUtility stringValue:key];
+  key = [FBSDKTypeUtility coercedToStringValue:key];
   return (key ? [FBSDKTypeUtility objectValue:_textures[key]] : nil);
 }
 

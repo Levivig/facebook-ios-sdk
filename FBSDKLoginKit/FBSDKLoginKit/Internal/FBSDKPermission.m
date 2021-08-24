@@ -18,17 +18,13 @@
 
 #import "FBSDKPermission.h"
 
-#ifdef FBSDKCOCOAPODS
- #import <FBSDKCoreKit/FBSDKCoreKit+Internal.h>
-#else
- #import "FBSDKCoreKit+Internal.h"
-#endif
+#import "FBSDKCoreKitBasicsImportForLoginKit.h"
 
 @implementation FBSDKPermission
 
 - (nullable instancetype)initWithString:(NSString *)string
 {
-  NSString *permission = [FBSDKTypeUtility stringValue:string];
+  NSString *permission = [FBSDKTypeUtility coercedToStringValue:string];
   if (permission.length <= 0) {
     return nil;
   }
@@ -70,13 +66,17 @@
   return rawPermissions;
 }
 
-- (BOOL)isEqual:(id)obj
+- (BOOL)isEqual:(id)object
 {
-  if (![obj isKindOfClass:[FBSDKPermission class]]) {
+  if (self == object) {
+    return YES;
+  }
+
+  if (![object isKindOfClass:[FBSDKPermission class]]) {
     return NO;
   }
 
-  FBSDKPermission *other = (FBSDKPermission *)obj;
+  FBSDKPermission *other = (FBSDKPermission *)object;
   return [self.value isEqualToString:other.value];
 }
 
